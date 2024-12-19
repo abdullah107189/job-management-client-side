@@ -16,7 +16,9 @@ const AddJob = () => {
     e.preventDefault()
     const getFormData = new FormData(e.target)
     const formDataEntries = Object.fromEntries(getFormData.entries())
-    formDataEntries.deadline = formattedDate;
+    formDataEntries.deadline = formattedDate
+    formDataEntries.authorPhoto = user?.photoURL
+    formDataEntries.bid_count = 0;
 
     const fetchAllJobs = async () => {
       try {

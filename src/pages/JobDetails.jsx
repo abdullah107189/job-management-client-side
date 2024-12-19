@@ -1,27 +1,22 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useState } from 'react'
 
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useLoaderData, useNavigate } from 'react-router-dom'
 import { AuthContext } from '../providers/AuthProvider'
-import { format } from 'date-fns'
+import { compareAsc, format, parse } from 'date-fns'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
 const JobDetails = () => {
   const jobInfo = useLoaderData()
-  const { _id, job_title, deadline, category, min_price, max_price, description, authorEmail } = jobInfo || {}
   const { user } = useContext(AuthContext)
+  const { _id, job_title, deadline, category, min_price, max_price, description, authorEmail, authorPhoto } = jobInfo || {}
   const navigate = useNavigate()
+
   const [startDate, setStartDate] = useState(new Date())
   const formattedDate = format(startDate, 'dd/MM/yyyy');
-  useEffect(() => {
-    if (deadline) {
-      const [day, month, year] = deadline.split("/");
-      const parsedDate = new Date(`${year}-${month}-${day}`);
-      setStartDate(parsedDate);
-    }
-  }, [deadline]);
+
   const handleRequestBid = async (e) => {
     e.preventDefault()
     const formData = new FormData(e.target)
@@ -30,18 +25,43 @@ const JobDetails = () => {
     formEntriesData.bidEmail = user?.email
     formEntriesData.job_id = _id
     formEntriesData.title = job_title
+    formEntriesData.min_price = min_price
+    formEntriesData.max_price = max_price
     formEntriesData.category = category
+    formEntriesData.bidAuthorEmail = authorEmail;
+    formEntriesData.status = 'Pending'
+
+
+    if (parseFloat(formEntriesData.price) > parseFloat(max_price)) {
+      return toast.error("It's out of the budget")
+    }
+    if (user?.email === authorEmail) {
+      return toast.error("You can't bid your post")
+    }
+
+    const parseformattedDate = parse(formattedDate, 'dd/MM/yyyy', new Date())
+    const parsedeadline = parse(deadline, 'dd/MM/yyyy', new Date())
+    const dateCompare = compareAsc(new Date(parseformattedDate), new Date(parsedeadline))
+    if (dateCompare === 1) {
+      return toast.error('must be follow author date')
+    }
+
+
     try {
       const { data } = await axios.post('http://localhost:5000/jobs-bid', formEntriesData)
-      console.log(data);
       if (data.modifiedCount) {
         toast.success('Bid request Send')
         navigate('/my-bids')
       }
-    } catch (error) {
-      console.log(error.message);
+    }
+
+    catch (error) {
+      if (error.status) {
+        toast.error('You are already bided!')
+      }
     }
   }
+
   return (
     <div className='flex flex-col md:flex-row justify-around gap-5  items-center min-h-[calc(100vh-306px)] md:max-w-screen-xl mx-auto my-5'>
       {/* Job Details */}
@@ -77,7 +97,8 @@ const JobDetails = () => {
             </div>
             <div className='rounded-full object-cover overflow-hidden w-14 h-14'>
               <img
-                src='https://i.ibb.co.com/qsfs2TW/Ix-I18-R8-Y-400x400.jpg'
+                referrerPolicy='no-referrer'
+                src={authorPhoto}
                 alt=''
               />
             </div>
@@ -136,12 +157,13 @@ const JobDetails = () => {
               />
             </div>
             <div className='flex flex-col gap-2 '>
-              <label className='text-gray-700'>Deadline</label>
+              <label className='text-gray-700'>User Deadline</label>
 
               {/* Date Picker Input Field */}
               <DatePicker
                 className='border p-2 rounded-md'
                 selected={startDate}
+                value={new Date()}
                 dateFormat="dd/MM/yyyy"
                 onChange={date => setStartDate(date)}
               />
@@ -151,7 +173,7 @@ const JobDetails = () => {
           <div className='flex justify-end mt-6'>
             <button
               type='submit'
-              className='px-8 py-2.5 leading-5 text-white transition-colors duration-300 transform bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:bg-gray-600'
+              className={`px-8 py-2.5 leading-5 text-white transition-colors duration-300 transform bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:bg-gray-600 ${authorEmail === user?.email ? 'btn-disabled bg-gray-300' : ''}`}
             >
               Place Bid
             </button>

@@ -1,16 +1,36 @@
 import axios from "axios"
 import { useContext, useEffect, useState } from "react"
 import { AuthContext } from "../providers/AuthProvider"
+import toast from "react-hot-toast"
 
 const MyBids = () => {
   const { user } = useContext(AuthContext)
   const [myBids, setMyBids] = useState([])
+
   useEffect(() => {
-    fetchMyBid()
+    axios.get(`http://localhost:5000/jobs-bid?email=${user?.email}`)
+      .then(res => setMyBids(res.data))
+
   }, [])
-  const fetchMyBid = async () => {
-    const { data } = await axios.get(`http://localhost:5000/jobs-bid?email=${user?.email}`)
-    setMyBids(data)
+
+  const handleUpdateStatus = (id, prevStatus, status) => {
+    if (prevStatus === status || prevStatus === "Complete") {
+      return toast.error('not allow')
+    }
+    const body = { bidId: id, status }
+    try {
+      axios.patch('http://localhost:5000/update-status', body)
+        .then(res => {
+          console.log(res.data);
+          if (res.data.modifiedCount > 0) {
+            toast.success(`update status : ${status}`)
+            axios.get(`http://localhost:5000/jobs-bid?email=${user?.email}`)
+              .then(res => setMyBids(res.data))
+          }
+        })
+    } catch (error) {
+      console.log(error.message);
+    }
   }
   return (
     <section className='container px-4 mx-auto my-12'>
@@ -49,9 +69,18 @@ const MyBids = () => {
                       scope='col'
                       className='px-4 py-3.5 text-sm font-normal text-left rtl:text-right text-gray-500'
                     >
-                      <button className='flex items-center gap-x-2'>
-                        <span>Price</span>
-                      </button>
+                      <p className='flex items-center gap-x-2'>
+                        <span>Author Price Range</span>
+                      </p>
+                    </th>
+
+                    <th
+                      scope='col'
+                      className='px-4 py-3.5 text-sm font-normal text-left rtl:text-right text-gray-500'
+                    >
+                      <p className='flex items-center gap-x-2'>
+                        <span>My Price Request</span>
+                      </p>
                     </th>
 
                     <th
@@ -85,12 +114,17 @@ const MyBids = () => {
                       </td>
 
                       <td className='px-4 py-4 text-sm text-gray-500  whitespace-nowrap'>
+                        <p>
+                          ${bid?.min_price} - ${bid?.max_price}
+                        </p>
+                      </td>
+                      <td className='px-4 py-4 text-sm text-gray-500  whitespace-nowrap'>
                         ${bid?.price}
                       </td>
                       <td className='px-4 py-4 text-sm whitespace-nowrap'>
                         <div className='flex items-center gap-x-2'>
                           <p
-                            className={`px-3 py-1  text-blue-500 bg-blue-100/60 text-xs  rounded-full`}
+                            className={`px-3 py-1 ${bid?.category === 'Web Development' ? 'text-blue-500 bg-blue-100/60' : bid?.category === 'Graphics Design' ? 'text-orange-500 bg-orange-100/60' : 'text-green-500 bg-green-100/60'}  text-xs  rounded-full`}
                           >
                             {bid?.category}
                           </p>
@@ -98,18 +132,32 @@ const MyBids = () => {
                       </td>
                       <td className='px-4 py-4 text-sm font-medium text-gray-700 whitespace-nowrap'>
                         <div
-                          className={`inline-flex items-center px-3 py-1 rounded-full gap-x-2 bg-yellow-100/60 text-yellow-500`}
+                          className={`inline-flex items-center px-3 py-1 rounded-full gap-x-2 
+                             ${bid?.status === "Pending" && 'bg-yellow-100/60 text-yellow-500'}
+                              ${bid?.status === "In Progress" && 'bg-blue-100/60 text-blue-500'}
+                              ${bid?.status === "Complete" && 'bg-green-100/60 text-green-500'}
+                              ${bid?.status === "Rejected" && 'bg-red-100/60 text-red-500'}
+                            `}
                         >
                           <span
-                            className={`h-1.5 w-1.5 rounded-full bg-yellow-500 `}
+                            className={`h-1.5 w-1.5 rounded-full 
+                              ${bid?.status === "Pending" && 'bg-yellow-500'}
+                              ${bid?.status === "In Progress" && 'bg-blue-500'}
+                              ${bid?.status === "Complete" && 'bg-green-500'}
+                              ${bid?.status === "Rejected" && 'bg-red-500'}
+
+                               `}
                           ></span>
-                          <h2 className='text-sm font-normal '>Pending</h2>
+                          <h2 className='text-sm font-normal '>
+                            {bid?.status}
+                          </h2>
                         </div>
                       </td>
                       <td className='px-4 py-4 text-sm whitespace-nowrap'>
                         <button
                           title='Mark Complete'
-                          className='text-gray-500 transition-colors duration-200   hover:text-red-500 focus:outline-none disabled:cursor-not-allowed'
+                          onClick={() => handleUpdateStatus(bid?._id, bid?.status, "Complete")}
+                          className={`${bid.status !== 'In Progress' ? 'btn-disabled disabled:cursor-not-allowed' : ''}text-gray-500 transition-colors duration-200   hover:text-red-500 focus:outline-none `}
                         >
                           <svg
                             xmlns='http://www.w3.org/2000/svg'
