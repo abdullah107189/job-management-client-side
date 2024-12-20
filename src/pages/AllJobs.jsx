@@ -5,12 +5,21 @@ import axios from 'axios'
 
 const AllJobs = () => {
   const [allJobs, setAllJobs] = useState([])
+  const [searchValue, setSearchValue] = useState('')
+  const [searchCategory, setSearchCategory] = useState('')
+  const [sortValue, setSortValue] = useState('')
   useEffect(() => {
+    const fetchAllJobs = async () => {
+      const { data } = await axios.get(`http://localhost:5000/all-jobs?search=${searchValue}&category=${searchCategory}&sort=${sortValue}`)
+      setAllJobs(data)
+    }
     fetchAllJobs()
-  }, [])
-  const fetchAllJobs = async () => {
-    const { data } = await axios.get('http://localhost:5000/jobs')
-    setAllJobs(data)
+  }, [searchValue, searchCategory, sortValue])
+
+  const handleSearchJobs = (e) => {
+    e.preventDefault()
+    // console.log(e.target.search.value);
+
   }
 
   return (
@@ -19,6 +28,7 @@ const AllJobs = () => {
         <div className='flex flex-col md:flex-row justify-center items-center gap-5 '>
           <div>
             <select
+              onChange={(e) => setSearchCategory(e.target.value)}
               name='category'
               id='category'
               className='border p-4 rounded-lg'
@@ -30,12 +40,13 @@ const AllJobs = () => {
             </select>
           </div>
 
-          <form>
+          <form onSubmit={handleSearchJobs}>
             <div className='flex p-1 overflow-hidden border rounded-lg    focus-within:ring focus-within:ring-opacity-40 focus-within:border-blue-400 focus-within:ring-blue-300'>
               <input
                 className='px-6 py-2 text-gray-700 placeholder-gray-500 bg-white outline-none focus:placeholder-transparent'
                 type='text'
                 name='search'
+                onChange={(e) => setSearchValue(e.target.value)}
                 placeholder='Enter Job Title'
                 aria-label='Enter Job Title'
               />
@@ -47,6 +58,7 @@ const AllJobs = () => {
           </form>
           <div>
             <select
+              onChange={(e) => setSortValue(e.target.value)}
               name='category'
               id='category'
               className='border p-4 rounded-md'

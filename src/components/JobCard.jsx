@@ -3,7 +3,7 @@
 import { Link } from 'react-router-dom'
 
 const JobCard = ({ allJob }) => {
-  const { _id, job_title, deadline, category, min_price, max_price, description, authorEmail, total_bids } = allJob || {}
+  const { _id, job_title, deadline, category, min_price, max_price, description, total_bids } = allJob || {}
   return (
     <Link
       to={`/job/${_id}`}
@@ -13,7 +13,7 @@ const JobCard = ({ allJob }) => {
         <span className='text-xs font-light text-gray-800 '>
           Deadline: {deadline}
         </span>
-        <span className='px-3 py-1 text-[8px] text-blue-800 uppercase bg-blue-200 rounded-full '>
+        <span className={`${category === 'Web Development' ? 'text-blue-500 bg-blue-100/60' : category === 'Graphics Design' ? 'text-orange-500 bg-orange-100/60' : 'text-green-500 bg-green-100/60'} px-3 py-1 text-[8px]  uppercase rounded-full `}>
           {category}
         </span>
       </div>
