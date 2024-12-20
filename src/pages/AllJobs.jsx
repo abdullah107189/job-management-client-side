@@ -4,27 +4,48 @@ import JobCard from '../components/JobCard'
 import axios from 'axios'
 
 const AllJobs = () => {
+  // pagination part ..................
+  const [totalJobs, setTotalJobs] = useState()
+  const [items, setItems] = useState(5)
+  const [pageNumber, setPageNumber] = useState(1)
+
   const [allJobs, setAllJobs] = useState([])
   const [searchValue, setSearchValue] = useState('')
   const [searchCategory, setSearchCategory] = useState('')
   const [sortValue, setSortValue] = useState('')
+
+  useEffect(() => {
+    axios.get(`http://localhost:5000/jobs-count?search=${searchValue}&category=${searchCategory}`)
+      .then(res => setTotalJobs(res.data.total_job))
+  }, [searchCategory, searchValue])
+
+  const itemsPerPage = items;
+  const numberOfPages = Math.ceil(totalJobs / itemsPerPage)
+  const pagesButton = []
+  for (let i = 0; i < numberOfPages; i++) {
+    pagesButton.push(i)
+  }
+
+
+
+  // filter, search and sort 
+
   useEffect(() => {
     const fetchAllJobs = async () => {
-      const { data } = await axios.get(`http://localhost:5000/all-jobs?search=${searchValue}&category=${searchCategory}&sort=${sortValue}`)
+      const { data } = await axios.get(`http://localhost:5000/all-jobs?search=${searchValue}&category=${searchCategory}&sort=${sortValue}&limit=${items}&skip=${pageNumber}`)
       setAllJobs(data)
     }
     fetchAllJobs()
-  }, [searchValue, searchCategory, sortValue])
-
+  }, [searchValue, searchCategory, sortValue, items, pageNumber])
   const handleReset = () => {
     setSearchCategory('')
     setSearchValue('')
     setSortValue('')
-
   }
 
+
   return (
-    <div className='container px-6 py-10 mx-auto min-h-[calc(100vh-306px)] flex flex-col justify-between'>
+    <div className='container px-6 py-5 mx-auto min-h-[calc(100vh-306px)] flex flex-col justify-between'>
       <div>
         <div className='flex flex-col md:flex-row justify-center items-center gap-5 '>
           <div>
@@ -77,6 +98,22 @@ const AllJobs = () => {
             allJobs?.map(job => <JobCard key={job._id} allJob={job} />)
           }
         </div>
+      </div>
+
+      {/* pagination buttons  */}
+      <div className='mt-5 flex justify-center items-center gap-4'>
+        <button className='btn hover:btn-neutral'>Prev</button>
+        <div className='flex items-center gap-2 justify-center'>
+          {
+            pagesButton.map(page =>
+              <button
+                onClick={() => setPageNumber(page + 1)}
+                className={`btn ${pageNumber === page + 1 && 'btn-neutral'}`} key={page}>
+                {page + 1}
+              </button>)
+          }
+        </div>
+        <button className='btn hover:btn-neutral'>Next</button>
       </div>
     </div>
   )
